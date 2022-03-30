@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Trade any chain asset. Decentralized over-the-counter trading tool which uses only technology to create trust and protects the property safety of both parties to the transaction.">
+
+    <title>Any Asset Over-the-counter Trading Tool - EOSTools</title>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-tagsinput/0.5.0/bootstrap-tagsinput.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/multi-select/0.9.12/css/multi-select.min.css"  rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/select2/3.4.8/select2.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/select2/3.4.8/select2-bootstrap.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-touchspin/3.0.1/jquery.bootstrap-touchspin.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/switchery/0.8.2/switchery.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-timepicker/0.5.2/css/bootstrap-timepicker.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-colorpicker/2.3.1/css/bootstrap-colorpicker.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker.min.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-daterangepicker/2.0.1/daterangepicker.min.css" rel="stylesheet" type="text/css" />
+
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/material-design-iconic-font/2.2.0/css/material-design-iconic-font.min.css" rel="stylesheet" type="text/css" />
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/html5shiv/3.7.0/html5shiv.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/respond.js/1.3.0/respond.min.js"></script>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+
+    <script>
+        function checkEnter(e) {
+            let et = e || window.event;
+            let keycode = et.charCode || et.keyCode;
+            if (keycode == 13) {
+                if (window.event) {
+                    window.event.returnValue = false;
+                } else {
+                    e.preventDefault(); //for firefox
+                }
+            }
+        }
+
+        function checkEnterRun(e,num,type) {
+            type = type || '';
+            let et = e || window.event;
+            let keycode = et.charCode || et.keyCode;
+            if (keycode === 13) {
+                if(num===0){
+                    getPrososal()
+                }else if(num===1){
+                    getContractActionsShow(type)
+                }
+            }
+        }
+
+        jQuery(function(){
+            $('#proposalMode').collapse('show');
+            $('#proposalTextMode').collapse('show');
+        });
+
+        function proposalMode() {
+            $("#processText").html('<span onclick="processMode()">Processing transaction</span>');
+            $("#proposalText").html('<a><b>Initiate transaction</b></a>');
+            $("#pendingText").html('<span onclick="pendingMode()">Pending order</span>');
+            $('#collapseGetAccountsByKey').collapse('hide');
+            $('#collapseGetAccountsByCreator').collapse('hide');
+            $('#collapseJsonPlusGetAcc').collapse('hide');
+            $('#processMode').collapse('hide');
+            $('#pendingMode').collapse('hide');
+            $('#proposalMode').collapse('show');
+        }
+
+        function processMode() {
+            $("#processText").html('<a><b>Processing transaction</b></a>');
+            $("#proposalText").html('<span onclick="proposalMode()">Initiate transaction</span>');
+            $("#pendingText").html('<span onclick="pendingMode()">Pending order</span>');
+            $('#collapseGetAccountsByKey').collapse('hide');
+            $('#collapseGetAccountsByCreator').collapse('hide');
+            $('#collapseJsonPlusGetAcc').collapse('hide');
+            $('#proposalMode').collapse('hide');
+            $('#pendingMode').collapse('hide');
+            $('#processMode').collapse('show');
+        }
+
+        function pendingMode() {
+            $("#processText").html('<span onclick="processMode()">Processing transaction</span>');
+            $("#proposalText").html('<span onclick="proposalMode()">Initiate transaction</span>');
+            $("#pendingText").html('<a><b>Pending order</b></a>');
+            $('#collapseGetAccountsByKey').collapse('hide');
+            $('#collapseGetAccountsByCreator').collapse('hide');
+            $('#collapseJsonPlusGetAcc').collapse('hide');
+            $('#proposalMode').collapse('hide');
+            $('#processMode').collapse('hide');
+            $('#pendingMode').collapse('show');
+        }
+
+        let permissionInputCount={};
+        permissionInputCount.total=0;
+        permissionInputCount.transfer=0;
+        permissionInputCount.contract=0;
+        permissionInputCount.nft={};
+        permissionInputCount.nft.atomic=0;
+
+        function addPermission(inputID,fnEnd){
+            let inputCount=0;
+            switch(inputID){
+                case 'totalPermission':
+                    permissionInputCount.total+=1;
+                    inputCount=permissionInputCount.total;
+                    break;
+                case 'transferPermission':
+                    permissionInputCount.transfer+=1;
+                    inputCount=permissionInputCount.transfer;
+                    break;
+                case 'contractPermission':
+                    permissionInputCount.contract+=1;
+                    inputCount=permissionInputCount.contract;
+                    break;
+                case 'transferNFTAtomicPermission':
+                    permissionInputCount.nft.atomic+=1;
+                    inputCount=permissionInputCount.nft.atomic;
+                    break;
+                default:
+                    break;
+            }
+            jQuery(function(){
+                let input_text="" +
+                    "<br><div><input type=\"text\" required\n" +
+                    "       onkeydown=\"checkEnter(event)\"\n" +
+                    "       onkeyup=\"value=value.replace(/[^\\a-\\z\\A-\\Z0-9\\.\\@]/g,'')\"\n" +
+                    "       onpaste=\"value=value.replace(/[^\\a-\\z\\A-\\Z0-9\\.\\@]/g,'')\"\n" +
+                    "       oncontextmenu = \"value=value.replace(/[^\\a-\\z\\A-\\Z0-9\\.\\@]/g,'')\"\n" +
+                    "       placeholder=\"account@authority\" class=\"form-control\" id=\""+inputID+inputCount.toString()+"\">\n" +
+                    "</div>";
+                $("#"+inputID+"Input").append(input_text);
+                if(fnEnd){fnEnd();}
+            });
+        }
+
+        let timeTypeNow='hours';
+
+        function timeType(value){
+            timeTypeNow=value;
+            $("#timeTypeText").html(value);
+        }
+    </script>
+
+</head>
+<body>
+
+<div class="account-pages"></div>
+<div class="clearfix"></div>
+<div class="wrapper-page">
+    <div class="text-center">
+        <a href="/index" class="logo"><span>EOS<span>Tools</span></span></a>
+        <h5 class="text-muted m-t-0 font-600">Any Asset Over-the-counter Trading Tool</h5>
+    </div>
+
+    <div class="m-t-40 card-box">
+
+        <div class="dropdown pull-right">
+            <a href="#" class="dropdown-toggle card-drop" data-toggle="dropdown" aria-expanded="false">
+                <i class="zmdi zmdi-more-vert"></i>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+                <li class="dropdown-header">Login info</li>
+                <li><a onclick="loginInfo()">View login info</a></li>
+                <li class="dropdown-header">Switch login</li>
+                <li><a onclick="logout()">Switch the login account (will refresh the page)</a></li>
+            </ul>
+        </div>
+
+        <div class="text-center">
+            <h4 class="text-uppercase font-bold m-b-0">Welcome Back</h4>
+        </div>
+
+        <br>
+        <ul>
+
+            <li id="proposalText">
+                <a><b>Initiate transaction</b></a>
+            </li>
+            <li id="processText">
+                <span onclick="processMode()">Processing transaction</span>
+            </li>
+            <li id="pendingText">
+                <span onclick="pendingMode()">Pending order</span>
+            </li>
+        </ul>
+
+        <div class="panel-body">
+            <form method="post" role="form">
+                <form action="#" data-parsley-validate novalidate>
+
+                    <div class="collapse" id="proposalMode">
+
+                        <H4><i class="fa fa-send"></i>&nbsp;&nbsp;&nbsp;<strong>Assets to be sent</strong></H4><br>
+
+                        <strong>Tokens<span onclick="unfold(this.id)" id="tokensSent" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                        <div class="collapse" id="tokensSentCollapse">
+                            <div class="form-group">
+                                <label>Token selection</label>
+                                <div id="tokenChooseSent">
+                                    <select class="form-control select2" onChange="writeHelpStatic(this.value, this.parentNode.id ,'_sent');">
+                                        <option>Choose a token</option>
+                                        <optgroup label="EOS Official Currency">
+                                            <option value="EOS,eosio.token,4">EOS</option>
+                                        </optgroup>
+                                        <optgroup label="EOSTools Official Currency">
+                                            <option value="SIGN,eostoolstech,4">SIGN</option>
+                                        </optgroup>
+                                        <optgroup label="The others">
+                                            <option value="KEY,mkstaketoken,4">KEY (Bihu / MYKEY)</option>
+                                            <option value="NDX,newdexissuer,4">NDX (Newdex)</option>
+                                            <option value="WAL,whaleextoken,3">WAL (WhaleEx)</option>
+                                            <option value="TPT,eosiotptoken,4">TPT (TokenPocket)</option>
+                                            <option value="MEETONE,eosiomeetone,4">MEETONE (MEET.ONE)</option>
+                                            <option value="USDT,tethertether,4">USDT (Tether)</option>
+                                            <option value="more">More tokens to choose ➜</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Token symbol *</label>
+                                <input type="text" id="token_symbol_sent" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^\A-\Z]/g,'')"
+                                       onpaste="value=value.replace(/[^\a-\z\A-\Z]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z]/g,'')"
+                                       placeholder="Enter the token symbol, capitalized, such as KEY" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Token contract account *</label>
+                                <input type="text" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                       onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                       placeholder="Enter the account name of the token contract" class="form-control" id="token_contract_sent">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    Token precision *
+                                    <span data-toggle="tooltip" data-placement="top" title="" data-original-title="For example, the minimum transfer amount of EOS is 0.0001, there are four digits after the decimal point, so the precision is 4." style="margin-left: 6px;">
+                                        <sup><i class="fa fa-question-circle" style="width: auto;"></i></sup>
+                                    </span>
+                                </label>
+                                <input type="text" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^0-9]/g,'')"
+                                       onpaste="value=value.replace(/[^0-9]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^0-9]/g,'')"
+                                       placeholder="Enter the precision of the token" class="form-control" id="token_precision_sent">
+                            </div>
+                            <div class="form-group">
+                                <label>Receiving account *</label>
+                                <span id="input_expansion_to_accounts">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('to_accounts')">✚</span>
+                                            </span>
+                                <textarea class="form-control" type="text" required
+                                          onkeydown="checkEnter(event)"
+                                          onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.\,]/g,'')"
+                                          onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.\,]/g,'')"
+                                          oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.\,]/g,'')"
+                                          placeholder="Separate accounts with commas" id="to_accounts"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity *</label>
+                                <input type="text" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^\0-9\.]/g,'')"
+                                       onpaste="value=value.replace(/[^\0-9\.]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^\0-9\.]/g,'')"
+                                       placeholder="Enter an integer or float" class="form-control" id="transfer_num_sent">
+                            </div>
+                            <div class="form-group">
+                                <label>Memo</label>
+                                <span id="input_expansion_memo_info_sent">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('memo_info_sent')">✚</span>
+                                            </span>
+                                <textarea id="memo_info_sent" placeholder=""
+                                          class="form-control"></textarea>
+                            </div>
+                            <div class="form-group text-right m-b-0">
+                                <a class="btn btn-primary" onclick="makeTransferCheck(0, 'Sent')">
+                                    Add operation
+                                </a>
+                            </div>
+
+                            <div class="collapse" id="collapseCheckInfoTransferSent">
+                                <br>
+                                <div id="checkInfoTransferSent"></div>
+                            </div>
+
+                            <div class="collapse" id="collapseInfoBasicTransferSent">
+                                <br>
+                                <div id="infoBasicTransferSent"></div>
+                            </div>
+                        </div>
+
+                        <strong>NFTs<span onclick="unfold(this.id)" id="nftsSent" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                        <div class="collapse" id="nftsSentCollapse">
+
+                            <ul>
+                                <li>
+                                    <strong>AtomicHub<span onclick="unfold(this.id)" id="atomicHubSent" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                                    <div class="collapse" id="atomicHubSentCollapse">
+
+                                        <div class="form-group">
+                                            <label>Asset ids *</label>
+                                            <input type="text" id="asset_ids_sent" required
+                                                   onkeydown="checkEnter(event)"
+                                                   onkeyup="value=value.replace(/[^0-9,]/g,'')"
+                                                   onpaste="value=value.replace(/[^0-9,]/g,'')"
+                                                   oncontextmenu = "value=value.replace(/[^0-9,]/g,'')"
+                                                   placeholder="Separate ids with commas" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Receiving account *</label>
+                                            <span id="input_expansion_to_accounts">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('to_account')">✚</span>
+                                            </span>
+                                            <input type="text" required
+                                                   onkeydown="checkEnter(event)"
+                                                   onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                                   onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                                   oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                                   placeholder="" class="form-control" id="to_account">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Memo</label>
+                                            <span id="input_expansion_memo_info_nft_sent">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('memo_info_nft_sent')">✚</span>
+                                            </span>
+                                            <textarea id="memo_info_nft_sent" placeholder=""
+                                                      class="form-control"></textarea>
+                                        </div>
+                                        <div class="form-group text-right m-b-0">
+                                            <a class="btn btn-primary" onclick="makeTransferNFTAtomicCheck(0, 'Sent')">
+                                                Add operation
+                                            </a>
+                                        </div>
+
+                                        <div class="collapse" id="collapseCheckInfoTransferNFTAtomicSent">
+                                            <br>
+                                            <div id="checkInfoTransferNFTAtomicSent"></div>
+                                        </div>
+
+                                        <div class="collapse" id="collapseInfoBasicTransferNFTAtomicSent">
+                                            <br>
+                                            <div id="infoBasicTransferNFTAtomicSent"></div>
+                                        </div>
+
+                                    </div>
+                                </li>
+                            </ul>
+
+                        </div>
+
+                        <strong>Others<span onclick="unfold(this.id)" id="othersSent" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                        <div class="collapse" id="othersSentCollapse">
+
+                            <label for="contract_name_sent">Contract *</label>
+                            <input type="text" required
+                                   onkeydown="checkEnterRun(event,1,'Sent')"
+                                   onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   placeholder="Contract account" class="form-control" id="contract_name_sent">
+                            <br>
+                            <div>
+                                <div class="form-group text-right m-b-0">
+                                    <a class="btn btn-primary" id="getContractBtnSent" data-loading-text="loading ..." onclick="getContractActionsShow('Sent')">
+                                        Get contract info
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="text-center" style="margin-top: 20px" id="waitInfoSent"></div>
+
+                            <div class="collapse" id="contractInfoModeSent">
+                                <div id="contractInfoSent"></div>
+                            </div>
+                            <div class="collapse" id="contractAbiInfoModeSent">
+                                <br>
+                                <div id="contractAbiInfoSent"></div>
+                            </div>
+                            <div class="collapse" id="contractAbiCheckButtonModeSent">
+                                <div class="form-group text-right m-b-0">
+                                    <a class="btn btn-inverse btn-trans" data-toggle="collapse" href="#collapseContractPlusSent">
+                                        Advanced
+                                    </a>
+                                    <a class="btn btn-primary" id="addContractBtnSent" data-loading-text="recover after 3 seconds ..." onclick="makeContractCheck('Sent')">
+                                        Add
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="collapse" id="collapseCheckInfoContractSent">
+                                <br>
+                                <div id="checkInfoContractSent"></div>
+                            </div>
+
+                            <div class="collapse" id="collapseInfoBasicContractSent">
+                                <br>
+                                <div id="infoBasicContractSent"></div>
+                            </div>
+
+                            <div class="collapse" id="collapseContractPlusSent" style="margin-top: 20px">
+
+                                <div class="form-group" onclick="funcPlus('multiManageSent','collapseMultiManageSent')">
+                                    <label for="multiManageSent">Batch operation identification management &nbsp;&nbsp;</label>
+                                    <input type="checkbox" id="multiManageSent" data-plugin="switchery" data-size="small" data-color="#3bafda" data-secondary-color="#98a6ad"/>
+                                </div>
+
+                                <div class="collapse" id="collapseMultiManageSent">
+                                    <div class="form-group">
+                                        <span class="text-muted font-13 m-b-30">* Here you can turn batch operation recognition on or off for input fields where the tool does not directly support batch operations. Select the input box option on the left to open it. After opening, the English comma in the content of the corresponding input box will be recognized as a separator for batch operations. If the selection box on the left is empty, it means that all parameters of the current contract support batch operation recognition</span><br><br>
+                                        <label>Select & enable batch operation recognition</label>
+                                        <div id="multiManageInfoSent"><span class="badge badge-success badge-sm">Attention</span>&nbsp;<span>There is no input box information, all parameters of the current contract already support batch operation recognition</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                        <H4><i class="fa fa-shopping-cart"></i>&nbsp;&nbsp;&nbsp;<strong>Assets to get</strong></H4><br>
+
+                        <strong>Tokens<span onclick="unfold(this.id)" id="tokensGet" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                        <div class="collapse" id="tokensGetCollapse">
+                            <div class="form-group">
+                                <label>Token selection</label>
+                                <div id="tokenChooseGet">
+                                    <select class="form-control select2" onChange="writeHelpStatic(this.value, this.parentNode.id, '_get');">
+                                        <option>Choose a token</option>
+                                        <optgroup label="EOS Official Currency">
+                                            <option value="EOS,eosio.token,4">EOS</option>
+                                        </optgroup>
+                                        <optgroup label="EOSTools Official Currency">
+                                            <option value="SIGN,eostoolstech,4">SIGN</option>
+                                        </optgroup>
+                                        <optgroup label="The others">
+                                            <option value="KEY,mkstaketoken,4">KEY (Bihu / MYKEY)</option>
+                                            <option value="NDX,newdexissuer,4">NDX (Newdex)</option>
+                                            <option value="WAL,whaleextoken,3">WAL (WhaleEx)</option>
+                                            <option value="TPT,eosiotptoken,4">TPT (TokenPocket)</option>
+                                            <option value="MEETONE,eosiomeetone,4">MEETONE (MEET.ONE)</option>
+                                            <option value="USDT,tethertether,4">USDT (Tether)</option>
+                                            <option value="more">More tokens to choose ➜<i class="fa fa-refresh"></i></option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Token symbol *</label>
+                                <input type="text" id="token_symbol_get" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^\A-\Z]/g,'')"
+                                       onpaste="value=value.replace(/[^\a-\z\A-\Z]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z]/g,'')"
+                                       placeholder="Enter the token symbol, capitalized, such as KEY" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Token contract account *</label>
+                                <input type="text" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                       onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                       placeholder="Enter the account name of the token contract" class="form-control" id="token_contract_get">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    Token precision *
+                                    <span data-toggle="tooltip" data-placement="top" title="" data-original-title="For example, the minimum transfer amount of EOS is 0.0001, there are four digits after the decimal point, so the precision is 4." style="margin-left: 6px;">
+                                        <sup><i class="fa fa-question-circle" style="width: auto;"></i></sup>
+                                    </span>
+                                </label>
+                                <input type="text" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^0-9]/g,'')"
+                                       onpaste="value=value.replace(/[^0-9]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^0-9]/g,'')"
+                                       placeholder="Enter the precision of the token" class="form-control" id="token_precision_get">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    From *
+                                    <span data-toggle="tooltip" data-placement="top" title="" data-original-title="The account that you get token from." style="margin-left: 6px;">
+                                        <sup><i class="fa fa-question-circle" style="width: auto;"></i></sup>
+                                    </span>
+                                </label>
+                                <span id="input_expansion_from_accounts">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('from_accounts')">✚</span>
+                                            </span>
+                                <textarea class="form-control" type="text" required
+                                          onkeydown="checkEnter(event)"
+                                          onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.\,]/g,'')"
+                                          onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.\,]/g,'')"
+                                          oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.\,]/g,'')"
+                                          placeholder="Separate accounts with commas" id="from_accounts"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity *</label>
+                                <input type="text" required
+                                       onkeydown="checkEnter(event)"
+                                       onkeyup="value=value.replace(/[^\0-9\.]/g,'')"
+                                       onpaste="value=value.replace(/[^\0-9\.]/g,'')"
+                                       oncontextmenu = "value=value.replace(/[^\0-9\.]/g,'')"
+                                       placeholder="Enter an integer or float" class="form-control" id="transfer_num_get">
+                            </div>
+                            <div class="form-group">
+                                <label>Memo</label>
+                                <span id="input_expansion_memo_info_get">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('memo_info_get')">✚</span>
+                                            </span>
+                                <textarea id="memo_info_get" placeholder=""
+                                          class="form-control"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    Permission *
+                                    <span data-toggle="tooltip" data-placement="top" title="" data-original-title="The account and authority used by the other party to sign, the format is account@authority." style="margin-left: 6px;">
+                                        <sup><i class="fa fa-question-circle" style="width: auto;"></i></sup>
+                                    </span>
+                                </label>
+                                <span href="#" style="float:right;" onclick="addPermission('transferPermission')">✚</span>
+                                <span onclick="transferAuthQuickWrite('from_accounts')" data-toggle="tooltip" data-placement="top" title="" data-original-title="Automatically fill in active permissions based on the transfer accounts." style="float:right;margin-right: 10px;"><i class="fa fa-pencil" style="width: auto;"></i></span>
+                                <div id="transferPermissionInput">
+                                    <div><input type="text" required
+                                                onkeydown="checkEnter(event)"
+                                                onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                placeholder="account@authority" class="form-control" id="transferPermission0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group text-right m-b-0">
+                                <a class="btn btn-primary" onclick="makeTransferCheck(0, 'Get')">
+                                    Add operation
+                                </a>
+                            </div>
+
+                            <div class="collapse" id="collapseCheckInfoTransferGet">
+                                <br>
+                                <div id="checkInfoTransferGet"></div>
+                            </div>
+
+                            <div class="collapse" id="collapseInfoBasicTransferGet">
+                                <br>
+                                <div id="infoBasicTransferGet"></div>
+                            </div>
+                        </div>
+
+                        <strong>NFTs<span onclick="unfold(this.id)" id="nftsGet" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                        <div class="collapse" id="nftsGetCollapse">
+
+                            <ul>
+                                <li>
+                                    <strong>AtomicHub<span onclick="unfold(this.id)" id="atomicHubGet" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                                    <div class="collapse" id="atomicHubGetCollapse">
+
+                                        <div class="form-group">
+                                            <label>Asset ids *</label>
+                                            <input type="text" id="asset_ids_get" required
+                                                   onkeydown="checkEnter(event)"
+                                                   onkeyup="value=value.replace(/[^0-9,]/g,'')"
+                                                   onpaste="value=value.replace(/[^0-9,]/g,'')"
+                                                   oncontextmenu = "value=value.replace(/[^0-9,]/g,'')"
+                                                   placeholder="Separate ids with commas" class="form-control">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>From *</label>
+                                            <span id="input_expansion_from_accounts">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('from_account')">✚</span>
+                                            </span>
+                                            <input type="text" required
+                                                   onkeydown="checkEnter(event)"
+                                                   onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                                   onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                                   oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.]/g,'')"
+                                                   placeholder="" class="form-control" id="from_account">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Memo</label>
+                                            <span id="input_expansion_memo_info_nft_get">
+                                                <span href="#" style="float:right;" onclick="inputExpansion('memo_info_nft_get')">✚</span>
+                                            </span>
+                                            <textarea id="memo_info_nft_get" placeholder=""
+                                                      class="form-control"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>
+                                                Permission *
+                                                <span data-toggle="tooltip" data-placement="top" title="" data-original-title="The account and authority used by the other party to sign, the format is account@authority." style="margin-left: 6px;">
+                                                <sup><i class="fa fa-question-circle" style="width: auto;"></i></sup>
+                                            </span>
+                                            </label>
+                                            <span href="#" style="float:right;" onclick="addPermission('transferNFTAtomicPermission')">✚</span>
+                                            <span onclick="transferAuthQuickWrite('from_account','NFTAtomic')" data-toggle="tooltip" data-placement="top" title="" data-original-title="Automatically fill in active permissions based on the transfer accounts." style="float:right;margin-right: 10px;"><i class="fa fa-pencil" style="width: auto;"></i></span>
+                                            <div id="transferNFTAtomicPermissionInput">
+                                                <div><input type="text" required
+                                                            onkeydown="checkEnter(event)"
+                                                            onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                            onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                            oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                            placeholder="account@authority" class="form-control" id="transferNFTAtomicPermission0">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group text-right m-b-0">
+                                            <a class="btn btn-primary" onclick="makeTransferNFTAtomicCheck(0, 'Get')">
+                                                Add operation
+                                            </a>
+                                        </div>
+
+                                        <div class="collapse" id="collapseCheckInfoTransferNFTAtomicGet">
+                                            <br>
+                                            <div id="checkInfoTransferNFTAtomicGet"></div>
+                                        </div>
+
+                                        <div class="collapse" id="collapseInfoBasicTransferNFTAtomicGet">
+                                            <br>
+                                            <div id="infoBasicTransferNFTAtomicGet"></div>
+                                        </div>
+
+                                    </div>
+                                </li>
+                            </ul>
+
+                        </div>
+
+                        <strong>Others<span onclick="unfold(this.id)" id="othersGet" data-toggle="tooltip" data-placement="top" title="" data-original-title="Unfold" style="margin-left: 10px;"><i class="fa fa-plus-square" style="width: auto;"></i></span></strong><br><br>
+
+                        <div class="collapse" id="othersGetCollapse">
+
+                            <label for="contract_name_get">Contract *</label>
+                            <input type="text" required
+                                   onkeydown="checkEnterRun(event,1,'Get')"
+                                   onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   placeholder="Contract account" class="form-control" id="contract_name_get">
+                            <br>
+                            <div>
+                                <div class="form-group text-right m-b-0">
+                                    <a class="btn btn-primary" id="getContractBtnGet" data-loading-text="loading ..." onclick="getContractActionsShow('Get')">
+                                        Get contract info
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="text-center" style="margin-top: 20px" id="waitInfoGet"></div>
+
+                            <div class="collapse" id="contractInfoModeGet">
+                                <div id="contractInfoGet"></div>
+                            </div>
+                            <div class="collapse" id="contractAbiInfoModeGet">
+                                <br>
+                                <div id="contractAbiInfoGet"></div>
+                                <div class="form-group">
+                                    <label>
+                                        Permission *
+                                        <span data-toggle="tooltip" data-placement="top" title="" data-original-title="The account and authority used by the other party to sign, the format is account@authority." style="margin-left: 6px;">
+                                            <sup><i class="fa fa-question-circle" style="width: auto;"></i></sup>
+                                        </span>
+                                    </label>
+                                    <span href="#" style="float:right;" onclick="addPermission('contractPermission')">✚</span>
+                                    <div id="contractPermissionGetInput">
+                                        <div><input type="text" required
+                                                    onkeydown="checkEnter(event)"
+                                                    onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                    onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                    oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                                    placeholder="account@authority" class="form-control" id="contractPermissionGet0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="collapse" id="contractAbiCheckButtonModeGet">
+                                <div class="form-group text-right m-b-0">
+                                    <a class="btn btn-inverse btn-trans" data-toggle="collapse" href="#collapseContractPlusGet">
+                                        Advanced
+                                    </a>
+                                    <a class="btn btn-primary" id="addContractBtnGet" data-loading-text="recover after 3 seconds ..." onclick="makeContractCheck('Get')">
+                                        Add
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="collapse" id="collapseCheckInfoContractGet">
+                                <br>
+                                <div id="checkInfoContractGet"></div>
+                            </div>
+
+                            <div class="collapse" id="collapseInfoBasicContractGet">
+                                <br>
+                                <div id="infoBasicContractGet"></div>
+                            </div>
+
+                            <div class="collapse" id="collapseContractPlusGet" style="margin-top: 20px">
+
+                                <div class="form-group" onclick="funcPlus('multiManageGet','collapseMultiManageGet')">
+                                    <label for="multiManageGet">Batch operation identification management &nbsp;&nbsp;</label>
+                                    <input type="checkbox" id="multiManageGet" data-plugin="switchery" data-size="small" data-color="#3bafda" data-secondary-color="#98a6ad"/>
+                                </div>
+
+                                <div class="collapse" id="collapseMultiManageGet">
+                                    <div class="form-group">
+                                        <span class="text-muted font-13 m-b-30">* Here you can turn batch operation recognition on or off for input fields where the tool does not directly support batch operations. Select the input box option on the left to open it. After opening, the English comma in the content of the corresponding input box will be recognized as a separator for batch operations. If the selection box on the left is empty, it means that all parameters of the current contract support batch operation recognition</span><br><br>
+                                        <label>Select & enable batch operation recognition</label>
+                                        <div id="multiManageInfoGet"><span class="badge badge-success badge-sm">Attention</span>&nbsp;<span>There is no input box information, all parameters of the current contract already support batch operation recognition</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <H4><i class="fa fa-file-code-o"></i>&nbsp;&nbsp;&nbsp;<strong>Transaction to be signed</strong></H4>
+
+                        <div class="collapse" id="proposalTextShowMode">
+                            <div class="form-group">
+                                <label>Transaction content *</label>
+                                <span onclick="proposalTextChange(0)" data-toggle="tooltip" data-placement="top" title="" data-original-title="Edit mode" style="float:right;margin-left: 10px;"><i class="fa fa-edit" style="width: auto;"></i></span>
+                                <div class="well" id="json_info_show" style="word-break:break-all;"></div>
+                            </div>
+                        </div>
+
+                        <div class="collapse" id="proposalTextMode">
+                            <div class="form-group">
+                                <label>Transaction content *</label>
+                                <span onclick="proposalTextChange(1)" data-toggle="tooltip" data-placement="top" title="" data-original-title="Save" style="float:right;margin-left: 10px;"><i class="fa fa-check-circle" style="width: auto;"></i></span>
+                                <span id="input_expansion_json_info">
+                                    <span href="#" style="float:right;" onclick="inputExpansion('json_info')">✚</span>
+                                </span>
+                                <textarea id="json_info" placeholder=""
+                                          onkeydown="checkEnter(event)"
+                                          class="form-control"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Permission *</label>
+                            <span href="#" style="float:right;" onclick="addPermission('totalPermission')">✚</span>
+                            <div id="totalPermissionInput">
+                                <div><input type="text" required
+                                            onkeydown="checkEnter(event)"
+                                            onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                            onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                            oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\.\@]/g,'')"
+                                            placeholder="account@authority" class="form-control" id="totalPermission0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-group m-b-0">
+                                <label class="control-label">Period of validity *</label>
+                                <div class="input-group">
+                                    <input type="text" required
+                                           onkeydown="checkEnter(event)"
+                                           onkeyup="value=value.replace(/[^\0-9\.]/g,'')"
+                                           onpaste="value=value.replace(/[^\0-9\.]/g,'')"
+                                           oncontextmenu = "value=value.replace(/[^\0-9\.]/g,'')"
+                                           class="form-control" id="validityPeriod" value="6">
+                                    <div class="input-group-btn">
+                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" >
+                                            <span id="timeTypeText">Hours</span>&nbsp;&nbsp;<span class="caret"></span>
+                                            <span class="sr-only"></span>
+                                        </button>
+                                        <ul class="dropdown-menu pull-right" role="menu" id="timeType">
+                                            <li>
+                                                <a href="javascript:void(0);" onClick="timeType('minutes')">Minutes</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" onClick="timeType('hours')">Hours</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" onClick="timeType('days')">Days</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="form-group text-right m-b-0">
+                            <a class="btn btn-inverse btn-trans" data-toggle="collapse" href="#collapsePlus">
+                                Advanced
+                            </a>
+                            <a class="btn btn-primary" onclick="proposalCheck()">
+                                Submit
+                            </a>
+                        </div>
+
+                    </div>
+
+                    <div class="collapse" id="processMode">
+                        <div class="form-group">
+                            <label>Proposer *</label>
+                            <span onclick="writeInAccName()" data-toggle="tooltip" data-placement="top" title="" data-original-title="Fill in the current login account" style="float:right;margin-left: 10px;"><i class="fa fa-pencil" style="width: auto;"></i></span>
+                            <input type="text" required
+                                   onkeydown="checkEnterRun(event,0)"
+                                   onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   placeholder="" class="form-control" id="proposer_name">
+                            <input type="text"
+                                   onkeyup="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   onpaste="value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   oncontextmenu = "value=value.replace(/[^\a-\z\A-\Z0-9\. ]/g,'')"
+                                   class="form-control" style="display:none">
+                        </div>
+
+                        <div id="submitButton">
+                            <div class="form-group text-right m-b-0">
+                                <a class="btn btn-inverse btn-trans" data-toggle="collapse" href="#collapsePlus">
+                                    Advanced
+                                </a>
+                                <a class="btn btn-primary" id="getContractBtn" data-loading-text="Loading ..." onclick="getProposal()">
+                                    Get proposal
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="collapse" id="proposalChoiceMode">
+                            <br>
+                            <div id="proposalChoice"></div>
+                        </div>
+
+                        <div class="collapse" id="proposalDetailMode">
+                            <br>
+                            <div class="collapse" id="proposalDetailShowMode">
+                                <div class="form-group">
+                                    <label>Proposal details: </label>
+                                    <span onclick="proposalDetailTextChange(0)" data-toggle="tooltip" data-placement="top" title="" data-original-title="code mode" style="float:right;margin-left: 10px;"><i class="fa fa-code" style="width: auto;"></i></span>
+                                    <div class="well" id="proposalDetailShow" style="word-break:break-all;"></div>
+                                </div>
+                            </div>
+
+                            <div class="collapse" id="proposalDetailShowJsonMode">
+                                <div class="form-group">
+                                    <label>Proposal details: </label>
+                                    <span onclick="proposalDetailTextChange(1)" data-toggle="tooltip" data-placement="top" title="" data-original-title="return to normal mode" style="float:right;margin-left: 10px;"><i class="fa fa-reply" style="width: auto;"></i></span>
+                                    <div class="well" id="proposalDetailShowJson" style="word-break:break-all;"></div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Expiration: </label>
+                                <span class="badge badge-info badge-sm" id="proposalExpiration">Time loading error, please reload</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Proposal status: </label>
+                                <span onclick="refreshProposal()" id="refreshFont" data-toggle="tooltip" data-placement="top" title="" data-original-title="refresh" style="float:right;margin-left: 10px;"><i class="fa fa-refresh" style="width: auto;"></i></span>
+                                <span id="proposalStatus">Error, please try again</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Permission list: </label>
+                                <br><br>
+                                <span id="proposalPermissoinList">Error, please try again</span>
+                            </div>
+
+                        </div>
+
+                        <div class="collapse" id="proposalDealMode">
+                            <div class="form-group text-right m-b-0">
+                                <a id="cancelBtn"></a>
+                                <a id="excuteBtn"></a>
+                            </div>
+                        </div>
+
+                        <div class="collapse" id="proposalDealMode0">
+                            <div class="form-group text-right m-b-0">
+                                <a id="cancelBtn0"></a>
+                                <a id="excuteBtn0"></a>
+                            </div>
+                        </div>
+
+                        <div class="collapse" id="proposalDealMode1">
+                            <div class="form-group text-right m-b-0">
+                                <a id="cancelBtn1"></a>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="collapse" id="pendingMode">Coming soon ...</div>
+
+                    <div class="collapse" id="collapsePlus" style="margin-top: 20px">
+
+                        <div class="form-group" onclick="funcPlus('nodeChange','collapseNodeChange')">
+                            <label for="nodeChange">Node switch &nbsp;&nbsp;</label>
+                            <input type="checkbox" id="nodeChange" data-plugin="switchery" data-size="small" data-color="#3bafda" data-secondary-color="#98a6ad"/>
+                        </div>
+
+                        <div class="collapse" id="collapseNodeChange">
+                            <div class="form-group">
+                                <select class="form-control select2" id="nodeInfo" onChange="changeNode()">
+                                    <option>Select a node</option>
+                                    <option value="mainnet.meet.one">MEET.ONE | mainnet.meet.one</option>
+                                    <option value="eospush.tokenpocket.pro">Tokenpocket | eospush.tokenpocket.pro</option>
+                                    <option value="eos.newdex.one">Newdex | eos.newdex.one</option>
+                                    <option value="mainnet.eosio.sg">EOSIO.SG | mainnet.eosio.sg</option>
+                                    <option value="eosbp-0.atticlab.net">Atticlab | eosbp-0.atticlab.net</option>
+                                    <option value="eos.eoscafeblock.com">EOSCafeBlock | eos.eoscafeblock.com</option>
+                                    <option value="mainnet.genereos.io">GenerEOS | mainnet.genereos.io</option>
+                                    <option value="api.eosbeijing.one">EOS Beijing | api.eosbeijing.one</option>
+                                    <option value="api.eosn.io">EOS Nation | api.eosn.io</option>
+                                    <option value="api.eosnewyork.io">EOS Newyork | api.eosnewyork.io</option>
+                                    <option value="api.bitmars.one">BitMars | api.bitmars.one</option>
+                                    <option value="api.eosdublin.io">EOS Dublin | api.eosdublin.io</option>
+                                    <option value="api.eoseoul.io">EOSEoul | api.eoseoul.io</option>
+                                    <option value="api.eossweden.org">EOS Sweden | api.eossweden.org</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="checkInfo"></div>
+
+                    <div id="checkInfoAno"></div>
+
+                    <div id="checkInfoRegExp"></div>
+
+                    <div id="checkInfoCal"></div>
+
+                    <div class="modal fade bd-example-modal-sm" style="overflow: auto" id="infoModal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-sm modal-dialog-centered">
+                            <div class="modal-content" style="word-break:break-all;">
+                                <span id="infoBasic"></span>
+                                <div class="form-group text-right m-b-0">
+                                    <a class="btn btn-primary" data-dismiss="modal">
+                                        Confirm
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade bd-example-modal-sm" style="overflow: auto" id="contractJsonFailModal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-sm modal-dialog-centered">
+                            <div class="modal-content" style="word-break:break-all;">
+                                The information you filled in is not a JSON array of transaction. Use the "Advanced" below if necessary.
+                                <div class="form-group text-right m-b-0">
+                                    <a class="btn btn-primary" data-dismiss="modal">
+                                        Confirm
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </form>
+
+        </div>
+
+    </div>
+    <!-- end card-box -->
+
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            <p class="text-muted">Need more tools?<a href="/index" class="text-primary m-l-5"><b>Come here to see</b></a></p>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/fastclick/1.0.6/fastclick.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jQuery-slimScroll/1.3.6/jquery.slimscroll.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery.blockUI/2.70.0-2014.11.23/jquery.blockUI.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/node-waves/0.6.4/waves.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/wow/0.1.9/wow.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery.nicescroll/3.5.1/jquery.nicescroll.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery-scrollTo/1.4.6/jquery.scrollTo.min.js"></script>
+
+<script src="https://cdn.bootcdn.net/ajax/libs/switchery/0.8.2/switchery.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-tagsinput/0.5.0/bootstrap-tagsinput.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery.quicksearch/2.4.0/jquery.quicksearch.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/select2/3.4.8/select2.min.js" type="text/javascript"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-touchspin/3.0.1/jquery.bootstrap-touchspin.min.js" type="text/javascript"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-timepicker/0.5.2/js/bootstrap-timepicker.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-colorpicker/2.3.1/js/bootstrap-colorpicker.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-daterangepicker/2.0.1/daterangepicker.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/bootstrap-maxlength/1.7.0/bootstrap-maxlength.min.js" type="text/javascript"></script>
+
+<script src="aaot.js" type="text/javascript"></script>
+
+<script>
+    jQuery(document).ready(function() {
+        !window.Select2 || $(".select2").select2();
+    });
+</script>
+
+</body>
+</html>
